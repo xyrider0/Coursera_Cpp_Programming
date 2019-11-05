@@ -3,12 +3,14 @@
 #include <random>
 #include <ctime>
 #include <cassert>
+#include <string>
 
 using namespace std;
 
 class Graph {
 public:
 	Graph(int num_vertices);
+	Graph(string file);
 
 	void createEdges(double density, int range);
 

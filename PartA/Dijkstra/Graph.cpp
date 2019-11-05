@@ -1,5 +1,9 @@
 #include "Graph.h"
 #include <limits>
+#include <iostream>
+#include <fstream>
+#include <iterator>
+#include <math.h>
 
 Graph::Graph(int num_vertices) : m_num_vertices(num_vertices), m_density(0.0), m_num_edges(0)
 {
@@ -8,6 +12,37 @@ Graph::Graph(int num_vertices) : m_num_vertices(num_vertices), m_density(0.0), m
 	{
 		m_conn_matrix.emplace_back(init);
 	}
+}
+
+Graph::Graph(string filename) : m_num_edges(0)
+{
+	ifstream file(filename);
+	istream_iterator<int> start(file), end;
+	vector<int> nodes(start, end);
+
+	// create m_conn_matrix
+	m_num_vertices = *nodes.begin();
+	vector<int> init(m_num_vertices, std::numeric_limits<int>::max());
+	for (int i = 0; i < m_num_vertices; ++i)
+	{
+		m_conn_matrix.emplace_back(init);
+	}
+	
+	// Create node values
+	// Skip First value since it is the number of vertices
+	// Undirected graph
+	for (auto node = nodes.begin()+1; node < nodes.end(); node++)
+	{
+		int node1 = *node;
+		int node2 = *++node;
+		int cost = *++node;
+		m_conn_matrix[node1][node2] = cost;
+		m_conn_matrix[node2][node1] = cost;
+		m_num_edges++;
+	}
+
+	// Multiplying numerator by 2 since undirected graph doulbed # edges
+	m_density = (2.0 * m_num_edges) / pow(m_num_vertices, 2);
 }
 
 int Graph::getNumVertices()

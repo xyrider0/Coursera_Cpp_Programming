@@ -1,54 +1,32 @@
-#pragma once
-#include <vector>
-#include <cassert>
-#include "PriorityQueue.h"
-#include "Graph.h"
-#include <map>
-#include <deque>
+#include "GraphAlgos.h"
 
-using namespace std;
-class ShortestPath {
-public:
-	ShortestPath(Graph graph);
-	pair<deque<int>, int> findPath(int v1, int v2);
-	int pathSize(int v1, int v2);
-
-private:
-	void addToClosedSet(PathNode node);
-	void addNeighborsToOpenSet(int vertex);
-	int last_vertex;
-	
-	// Key = Node; Value = Cost, PrevNode
-	map<int, pair<int, int>> m_closed_set;
-	PriorityQueue m_open_set;
-	Graph graph;
-};
-
-ShortestPath::ShortestPath(Graph graph) : graph(graph) 
+GraphAlgos::GraphAlgos(Graph graph) : graph(graph)
 {
 	m_open_set = PriorityQueue();
 }
 
-pair<deque<int>, int> ShortestPath::findPath(int v1, int v2)
+pair<deque<int>, int> GraphAlgos::findPath(int v1, int v2)
 {
+	reset();
 	assert(v1 < graph.getNumVertices());
 	assert(v2 < graph.getNumVertices());
 
 	last_vertex = v1;
 
 	// Put origin in closed set
-	addToClosedSet(PathNode(last_vertex, 0, -1));
+	addToClosedSet(PathEdge(last_vertex, 0, -1));
 
-	PathNode next_node;
+	PathEdge next_node;
 	while (true)
 	{
 		// Put neighbors in open set
-		addNeighborsToOpenSet(last_vertex);
+		int cur_edge = m_closed_set.find(last_vertex)->second.first;
+		addNeighborsToOpenSet(last_vertex, cur_edge);
 
 		// Bring in smallest open set cost to closed set
 		// In format (vertex, edge)
 			// If destination, stop
-		
+
 		if (m_open_set.size())
 		{
 			next_node = m_open_set.useTop();
@@ -70,7 +48,7 @@ pair<deque<int>, int> ShortestPath::findPath(int v1, int v2)
 			// Trace previous nodes recorded to find shortest path
 			deque<int> shortest_path;
 			int vert = v2;
-			
+
 			shortest_path.push_back(vert);
 			while (vert != v1)
 			{
@@ -95,7 +73,50 @@ pair<deque<int>, int> ShortestPath::findPath(int v1, int v2)
 	// Put neighbors in open set, updating values if necessary
 }
 
-void ShortestPath::addToClosedSet(PathNode next_node)
+pair<deque<PathEdge>, int> GraphAlgos::findPrimTree()
+{
+	reset();
+	deque<PathEdge> prim;
+
+	// Choose a node to start
+	last_vertex = 0;
+
+	// Put origin in closed set
+	addToClosedSet(PathEdge(last_vertex, 0, -1));
+	// Put neighbors in open set
+	addNeighborsToOpenSet(last_vertex);
+
+	PathEdge next_node;
+	while (m_open_set.size())
+	{
+		// Bring in smallest open set cost
+		next_node = m_open_set.useTop();
+		
+		// If not already in closed set
+		if (m_closed_set.find(next_node.getVertex()) == m_closed_set.end())
+		{
+			addToClosedSet(next_node);
+			prim.push_back(next_node);
+
+			// Check if found complete tree
+			if (m_closed_set.size() == graph.getNumVertices())
+			{
+				int total_edge(0);
+				for (auto it = m_closed_set.begin(); it != m_closed_set.end(); it++)
+				{
+					total_edge += it->second.first;
+				}
+				return pair<deque<PathEdge>, int>(prim, total_edge);
+			}
+		}
+	}
+	// Tree does not exist, return -1
+	deque<PathEdge> dummy_path;
+	dummy_path.emplace_back(PathEdge(-1, -1, -1));
+	return pair<deque<PathEdge>, int>(dummy_path, -1);
+}
+
+void GraphAlgos::addToClosedSet(PathEdge next_node)
 {
 	int next_vertex = next_node.getVertex();
 	int next_edge_cost = next_node.getCost();
@@ -106,15 +127,20 @@ void ShortestPath::addToClosedSet(PathNode next_node)
 	last_vertex = next_vertex;
 }
 
-void ShortestPath::addNeighborsToOpenSet(int vertex)
+void GraphAlgos::addNeighborsToOpenSet(int vertex, int add_edge_val)
 {
 	vector<int> nb = graph.getNeighbors(vertex);
-	int cur_edge = m_closed_set.find(vertex)->second.first;
 	for (auto v : nb)
 	{
 		if (m_closed_set.find(v) == m_closed_set.end())
 		{
-			m_open_set.insert(PathNode(v, cur_edge + graph.getEdgeValue(vertex, v), last_vertex));
+			m_open_set.insert(PathEdge(v, add_edge_val + graph.getEdgeValue(vertex, v), last_vertex));
 		}
 	}
+}
+
+void GraphAlgos::reset()
+{
+	m_closed_set.clear();
+	m_open_set.clear();
 }

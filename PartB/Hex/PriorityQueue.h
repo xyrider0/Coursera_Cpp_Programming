@@ -1,26 +1,25 @@
 #pragma once
 #include <queue>
 #include <vector>
-#include <tuple>
 #include <string>
+#include "Node.h"
 
 using namespace std;
 
 class PathEdge
 {
 public:
-	PathEdge() : m_vertex(-1), m_cost(-1), m_prev_vertex(-1) {};
-	PathEdge(int vertex, int cost, int prev_vertex) : m_vertex(vertex), m_cost(cost), m_prev_vertex(prev_vertex) {};
+	PathEdge() : m_node(nullptr), m_cost(-1), m_prev_node(nullptr) {}
+	PathEdge(Node* node, int cost, Node* prev_node) : m_node(node), m_cost(cost), m_prev_node(prev_node) {};
+	~PathEdge() {}
 	int getCost() { return m_cost; };
-	int getVertex() { return m_vertex; };
-	int getPrevVertex() { return m_prev_vertex; };
-	string get() { return "(" + to_string(m_vertex) + "," + 
-					to_string(m_prev_vertex) + "," + to_string(m_cost) + ")"; }
+	Node* getNode() { return m_node; };
+	Node* getPrevNode() { return m_prev_node; };
 
 private:
-	int m_vertex;
+	Node* m_node;
 	int m_cost;
-	int m_prev_vertex;
+	Node* m_prev_node;
 };
 
 class Comparator
@@ -32,7 +31,7 @@ public:
 	}
 };
 
-class PriorityQueue{
+class PriorityQueue {
 public:
 	PriorityQueue();
 	~PriorityQueue();
