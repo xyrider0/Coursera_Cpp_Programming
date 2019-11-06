@@ -17,6 +17,8 @@ public:
 private:
 // Member Variables
 	std::vector<std::vector<Node*>> m_board;
+	std::vector<std::vector<COLOR>> m_board_state;
+	int m_turns;
 	int m_size;
 	COLOR m_player;
 	COLOR m_computer;
@@ -26,5 +28,6 @@ private:
 	void playerSetup();
 	void makeMove(COLOR player);
 	void printBoard();
-	COLOR checkForWinner();
+	COLOR checkForWinner(bool fullBoard = false);
+	pair<int, int> runMC(int numTrials);
 };

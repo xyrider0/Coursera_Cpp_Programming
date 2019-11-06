@@ -2,9 +2,11 @@
 #include <ctime>
 #include <random>
 
-HexBoard::HexBoard(int size) : m_size(size), m_player(COLOR::NONE), m_computer(COLOR::NONE)
+HexBoard::HexBoard(int size) : m_turns(0), m_size(size), m_player(COLOR::NONE), m_computer(COLOR::NONE)
 {
 	m_algo = GraphAlgos();
+	m_board_state = std::vector<std::vector<COLOR>>(m_size, std::vector<COLOR>(m_size, COLOR::NONE));
+
 	for (int i = 0; i < m_size; i++)
 	{
 		m_board.emplace_back(std::vector<Node*>());
@@ -150,10 +152,9 @@ void HexBoard::makeMove(COLOR player)
 		else
 		{
 			// Computer select move
-			std::uniform_int_distribution<int> edge_len_gen(0, m_size - 1);
-			std::default_random_engine e(time(0));
-			row = edge_len_gen(e);
-			column = edge_len_gen(e);
+			pair<int, int> next_move = runMC(1000);
+			row = next_move.first;
+			column = next_move.second;
 		}
 
 		if (0 <= row && row < m_size && 0 <= column && column < m_size)
@@ -162,7 +163,9 @@ void HexBoard::makeMove(COLOR player)
 			if (target->getColor() == COLOR::NONE)
 			{
 				m_board[row][column]->setColor(player);
+				m_board_state[row][column] = player;
 				printBoard();
+				m_turns++;
 				return;
 			}
 		}
@@ -171,6 +174,74 @@ void HexBoard::makeMove(COLOR player)
 			std::cout << "Invalid Move: select another move" << std::endl;
 		}
 	}
+}
+
+pair<int, int> HexBoard::runMC(int numTrials)
+{
+	// Structure to store location of winning moves
+	std::vector<std::vector<int>> m_winning_trials(m_size, std::vector<int>(m_size, 0));
+
+	// List of pieces left to play
+	int turns_left = pow(m_size, 2) - m_turns;
+	std::vector<COLOR> moves(turns_left, m_computer); 
+
+	// Integer auto "rounds" down on odd turns giving m_computer one more move
+	std::fill(moves.begin(), moves.begin() + turns_left/2, m_player); 
+
+	for(int iii = 0; iii < numTrials; iii++)
+	{
+		std::shuffle(moves.begin(), moves.end(), std::default_random_engine(time(0)));
+		
+		int moves_index = 0;
+		// Fill rest of board randomly
+		for (int i = 0; i < m_size; i++)
+		{
+			for (int j = 0; j < m_size; j++)
+			{
+				if (m_board_state[i][j] == COLOR::NONE)
+				{
+					m_board[i][j]->setColor(moves[moves_index]);
+					moves_index++;
+				}
+			}
+		}
+
+		// Did MC trial win?
+		bool winning_pos(checkForWinner(true) == m_computer);
+
+		for (int i = 0; i < m_size; i++)
+		{
+			for (int j = 0; j < m_size; j++)
+			{
+				// Increase value of winning moves
+				if (winning_pos && m_board_state[i][j] == COLOR::NONE && m_board[i][j]->getColor() == m_computer)
+				{
+					m_winning_trials[i][j]++;
+				}
+
+				// Reset to current game state
+				m_board[i][j]->setColor(m_board_state[i][j]);
+			}
+		}
+	}
+
+	// Return best row/column move
+	int max = 0;
+	pair<int, int> ans;
+	for (int i = 0; i < m_size; i++)
+	{
+		for (int j = 0; j < m_size; j++)
+		{
+			if (m_winning_trials[i][j] > max)
+			{
+				max = m_winning_trials[i][j];
+				ans.first = i;
+				ans.second = j;
+			}
+		}
+	}
+
+	return ans;
 }
 
 // Have user choose to go first or second
@@ -247,7 +318,7 @@ void HexBoard::printBoard()
 	return;
 }
 
-COLOR HexBoard::checkForWinner()
+COLOR HexBoard::checkForWinner(bool fullBoard)
 {
 	std::vector<Node*> start_edge_w, start_edge_b, end_edge_w, end_edge_b;
 
@@ -267,6 +338,12 @@ COLOR HexBoard::checkForWinner()
 		{
 			return COLOR::WHITE;
 		}
+	}
+
+	if (fullBoard)
+	{
+		// if full board and has not return white yet, then black won.
+		return COLOR::BLACK;
 	}
 
 	for (auto node: start_edge_b)

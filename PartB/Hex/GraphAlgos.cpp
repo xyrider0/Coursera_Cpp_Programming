@@ -3,7 +3,6 @@
 GraphAlgos::GraphAlgos()
 {
 	m_open_set = PriorityQueue();
-	dummy_node = new Node();
 }
 
 GraphAlgos::~GraphAlgos()
@@ -15,25 +14,25 @@ pair<deque<Node*>, int> GraphAlgos::findPath(Node* v1, std::vector<Node*> v2, CO
 {
 	reset();
 
-	last_node = v1;
+	m_last_node = v1;
 
 	// Put origin in closed set
-	addToClosedSet(PathEdge(last_node, 0, dummy_node));
+	addToClosedSet(PathEdge(m_last_node, 0, nullptr));
 
 	PathEdge next_edge;
 	while (true)
 	{
 		// Put neighbors in open set
-		int cur_edge = m_closed_set.find(last_node)->second.first;
-		addNeighborsToOpenSet(last_node, cur_edge);
+		int cur_edge = m_closed_set.find(m_last_node)->second.first;
+		addNeighborsToOpenSet(m_last_node, cur_edge);
 
 
 		// If destination, or first node color is not correct, exit
-		if (!m_open_set.size() || last_node->getColor() != color)
+		if (!m_open_set.size() || m_last_node->getColor() != color)
 		{
 			// Path does not exist, return -1 shortest_path and Infinite cost
 			deque<Node*> shortest_path;
-			shortest_path.emplace_back(dummy_node);
+			shortest_path.emplace_back(nullptr);
 			int shortest_cost = std::numeric_limits<int>::max();
 			return pair<deque<Node*>, int>(shortest_path, shortest_cost);
 		}
@@ -47,11 +46,11 @@ pair<deque<Node*>, int> GraphAlgos::findPath(Node* v1, std::vector<Node*> v2, CO
 		{
 			// Find shortest cost by referencing closed set
 			addToClosedSet(next_edge);
-			int shortest_cost = m_closed_set.find(last_node)->second.first;
+			int shortest_cost = m_closed_set.find(m_last_node)->second.first;
 
 			// Trace previous nodes recorded to find shortest path
 			deque<Node*> shortest_path;
-			Node* node = last_node;
+			Node* node = m_last_node;
 
 			shortest_path.push_back(node);
 			while (node != v1)
@@ -83,12 +82,12 @@ pair<deque<Node*>, int> GraphAlgos::findPath(Node* v1, std::vector<Node*> v2, CO
 //	deque<PathEdge> prim;
 //
 //	// Choose a node to start
-//	last_node = 0;
+//	m_last_node = 0;
 //
 //	// Put origin in closed set
-//	addToClosedSet(PathEdge(last_node, 0, -1));
+//	addToClosedSet(PathEdge(m_last_node, 0, -1));
 //	// Put neighbors in open set
-//	addNeighborsToOpenSet(last_node);
+//	addNeighborsToOpenSet(m_last_node);
 //
 //	PathEdge next_edge;
 //	while (m_open_set.size())
@@ -128,7 +127,7 @@ void GraphAlgos::addToClosedSet(PathEdge next_edge)
 
 	auto val = pair<int, Node*>(next_edge_cost, next_prev_node);
 	m_closed_set.insert(map<Node*, pair<int, Node*>>::value_type(next_node, val));
-	last_node = next_node;
+	m_last_node = next_node;
 }
 
 void GraphAlgos::addNeighborsToOpenSet(Node* node, int add_edge_val)
@@ -139,7 +138,7 @@ void GraphAlgos::addNeighborsToOpenSet(Node* node, int add_edge_val)
 	{
 		if (m_closed_set.find(v) == m_closed_set.end() && v->getColor() == node->getColor())
 		{
-			m_open_set.insert(PathEdge(v, add_edge_val + node_to_neighbor_cost, last_node));
+			m_open_set.insert(PathEdge(v, add_edge_val + node_to_neighbor_cost, m_last_node));
 		}
 	}
 }

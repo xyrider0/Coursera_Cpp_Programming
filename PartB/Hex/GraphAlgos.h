@@ -18,8 +18,7 @@ private:
 	void addToClosedSet(PathEdge edge);
 	void addNeighborsToOpenSet(Node* node, int add_edge_val = 0);
 	void reset();
-	Node* last_node;
-	Node* dummy_node;
+	Node* m_last_node;
 
 	// Key = Node; Value = Cost, PrevNode
 	map<Node*, pair<int, Node*>> m_closed_set;
